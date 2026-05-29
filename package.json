@@ -1,0 +1,16 @@
+{
+  "name": "rehbox",
+  "private": true,
+  "scripts": {
+    "dev:api": "cd apps/api/rehboxhealth && php artisan serve",
+    "dev:web": "cd \"apps/web/rehbox-motion-health-main\" && npx vite",
+    "dev:reverb": "cd apps/api/rehboxhealth && php artisan reverb:start --port=9000",
+    "dev": "concurrently \"npm run dev:api\" \"npm run dev:web\" \"npm run dev:reverb\"",
+    "build:web": "cd \"apps/web/rehbox-motion-health-main\" && npx vite build",
+    "install:web": "cd \"apps/web/rehbox-motion-health-main\" && npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0",
+    "shadcn": "^4.7.0"
+  }
+}

@@ -1,0 +1,61 @@
+# ===== Dependencies =====
+node_modules/
+**/node_modules/
+apps/api/rehboxhealth/vendor/
+vendor/
+
+# ===== Environment / secrets =====
+.env
+**/.env
+.env.*
+!.env.example
+**/auth.json
+*.key
+apps/api/rehboxhealth/storage/*.key
+
+# ===== Build output =====
+dist/
+**/dist/
+dist-ssr/
+apps/web/rehbox-motion-health-main/dist/
+apps/api/rehboxhealth/public/build/
+apps/api/rehboxhealth/public/hot/
+apps/api/rehboxhealth/public/storage/
+
+# ===== Laravel runtime =====
+apps/api/rehboxhealth/storage/logs/
+apps/api/rehboxhealth/storage/framework/cache/
+apps/api/rehboxhealth/storage/framework/sessions/
+apps/api/rehboxhealth/storage/framework/views/
+apps/api/rehboxhealth/storage/pail/
+apps/api/rehboxhealth/bootstrap/cache/
+.phpunit.result.cache
+.phpunit.cache/
+
+# ===== Exercise videos (large media — kept out of git; transfer separately) =====
+apps/api/rehboxhealth/storage/app/public/exercises/videos/
+*.mp4
+*.mov
+*.webm
+*.avi
+*.mkv
+
+# ===== Logs =====
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ===== Editor / OS =====
+.idea/
+.vscode/
+.fleet/
+.nova/
+.zed/
+.DS_Store
+Thumbs.db
+*.local
+*.suo
+*.sw?

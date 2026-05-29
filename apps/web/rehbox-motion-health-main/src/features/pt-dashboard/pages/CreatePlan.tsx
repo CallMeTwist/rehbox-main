@@ -1,0 +1,513 @@
+// src/features/pt-dashboard/pages/CreatePlan.tsx
+import { useState, useEffect } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
+import { CheckCircle, Minus, Plus } from "lucide-react";
+import api from "@/lib/api";
+import toast from "react-hot-toast";
+
+const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+const CATEGORY_LABELS: Record<string, string> = {
+  head_neck:  'Head & Neck',
+  upper_limb: 'Upper Limb',
+  back:       'Back',
+  lower_limb: 'Lower Limb',
+};
+
+interface ExerciseOverride {
+  sets: number;
+  reps: number;
+  hold_seconds: number;
+  pt_notes: string;
+}
+
+// Compact number stepper used for sets/reps/hold
+const Stepper = ({
+  label,
+  value,
+  min = 0,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  min?: number;
+  onChange: (v: number) => void;
+}) => (
+  <div className="flex flex-col items-center gap-1">
+    <span className="text-xs text-muted-foreground font-medium">{label}</span>
+    <div className="flex items-center gap-1">
+      <button
+        type="button"
+        onClick={() => onChange(Math.max(min, value - 1))}
+        className="w-6 h-6 rounded-lg bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors"
+      >
+        <Minus size={11} />
+      </button>
+      <span className="w-8 text-center text-sm font-bold">{value}</span>
+      <button
+        type="button"
+        onClick={() => onChange(value + 1)}
+        className="w-6 h-6 rounded-lg bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors"
+      >
+        <Plus size={11} />
+      </button>
+    </div>
+  </div>
+);
+
+interface CreatePlanProps {
+  editPlan?: any;
+}
+
+const CreatePlan = ({ editPlan }: CreatePlanProps = {}) => {
+  const isEditing = !!editPlan;
+  const [planName, setPlanName]             = useState(editPlan?.title ?? "");
+  const [selectedClient, setSelectedClient] = useState(editPlan?.client_id?.toString() ?? "");
+  const [selectedDays, setSelectedDays]     = useState<string[]>([]);
+  const [notes, setNotes]                   = useState(editPlan?.notes ?? "");
+  const [submitted, setSubmitted]           = useState(false);
+  const [createdPlanName, setCreatedPlanName]     = useState("");
+  const [createdClientName, setCreatedClientName] = useState("");
+  const [searchQuery, setSearchQuery]         = useState('');
+  const [tierFilter, setTierFilter]           = useState<'free' | 'paid' | undefined>(undefined);
+  const [openCategories, setOpenCategories]   = useState<Set<string>>(new Set());
+
+  // Map of exercise id → override values
+  const [overrides, setOverrides] = useState<Record<number, ExerciseOverride>>({});
+
+  // Pre-fill overrides when editing
+  useEffect(() => {
+    if (editPlan?.exercises) {
+      const initialOverrides: Record<number, ExerciseOverride> = {};
+      editPlan.exercises.forEach((ex: any) => {
+        initialOverrides[ex.id] = {
+          sets:         ex.pivot?.sets         ?? ex.default_sets         ?? 3,
+          reps:         ex.pivot?.reps         ?? ex.default_reps         ?? 10,
+          hold_seconds: ex.pivot?.hold_seconds ?? ex.default_hold_seconds ?? 0,
+          pt_notes:     ex.pivot?.pt_notes     ?? '',
+        };
+      });
+      setOverrides(initialOverrides);
+    }
+  }, [editPlan]);
+
+  const selectedExerciseIds = Object.keys(overrides).map(Number);
+
+  // Fetch real clients from API
+  const { data: clientsData, isLoading: clientsLoading } = useQuery({
+    queryKey: ['pt-clients'],
+    queryFn:  () => api.get('/pt/clients').then(r => r.data.clients),
+  });
+
+  // Fetch real exercises from API
+  const { data: exercisesData, isLoading: exercisesLoading } = useQuery({
+    queryKey: ['pt-exercises', tierFilter],
+    queryFn:  () => api.get('/pt/exercises', {
+      params: tierFilter ? { access_tier: tierFilter } : {},
+    }).then(r => {
+      const d = r.data;
+      return Array.isArray(d) ? d : (d.exercises ?? d.data ?? []);
+    }),
+  });
+
+  const clients   = Array.isArray(clientsData)   ? clientsData   : [];
+  const exercises = Array.isArray(exercisesData) ? exercisesData : [];
+
+  const filteredExercises = exercises.filter((ex: any) =>
+    ex.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (ex.description?.toLowerCase() ?? '').includes(searchQuery.toLowerCase())
+  );
+
+  const groupedExercises = filteredExercises.reduce((acc: Record<string, any[]>, ex: any) => {
+    const cat = ex.category ?? 'other';
+    if (!acc[cat]) acc[cat] = [];
+    acc[cat].push(ex);
+    return acc;
+  }, {});
+
+  const toggleExercise = (ex: any) => {
+    setOverrides((prev) => {
+      if (prev[ex.id]) {
+        const next = { ...prev };
+        delete next[ex.id];
+        return next;
+      }
+      return {
+        ...prev,
+        [ex.id]: {
+          sets:         ex.default_sets         ?? 3,
+          reps:         ex.default_reps         ?? 10,
+          hold_seconds: ex.default_hold_seconds ?? 0,
+          pt_notes:     '',
+        },
+      };
+    });
+  };
+
+  const updateOverride = (id: number, field: keyof ExerciseOverride, value: number | string) => {
+    setOverrides((prev) => ({
+      ...prev,
+      [id]: { ...prev[id], [field]: value },
+    }));
+  };
+
+  const toggleDay = (day: string) =>
+    setSelectedDays((prev) =>
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
+    );
+
+  const createPlanMutation = useMutation({
+    mutationFn: () =>
+      isEditing
+        ? api.put(`/pt/plans/${editPlan.id}`, {
+            title:     planName,
+            frequency: selectedDays.length > 0 ? 'custom' : 'daily',
+            notes: [
+              notes,
+              selectedDays.length > 0 ? `Session days: ${selectedDays.join(', ')}` : null,
+            ].filter(Boolean).join('\n') || null,
+            exercises: selectedExerciseIds.map((id) => ({
+              exercise_id:  id,
+              sets:         overrides[id].sets,
+              reps:         overrides[id].reps,
+              hold_seconds: overrides[id].hold_seconds,
+              pt_notes:     overrides[id].pt_notes || null,
+            })),
+          })
+        : api.post('/pt/plans', {
+            client_id: parseInt(selectedClient),
+            title:     planName,
+            frequency: selectedDays.length > 0 ? 'custom' : 'daily',
+            notes: [
+              notes,
+              selectedDays.length > 0 ? `Session days: ${selectedDays.join(', ')}` : null,
+            ].filter(Boolean).join('\n') || null,
+            exercises: selectedExerciseIds.map((id) => ({
+              exercise_id:  id,
+              sets:         overrides[id].sets,
+              reps:         overrides[id].reps,
+              hold_seconds: overrides[id].hold_seconds,
+              pt_notes:     overrides[id].pt_notes || null,
+            })),
+          }),
+    onSuccess: () => {
+      const client = clients.find((c: any) => c.id === parseInt(selectedClient));
+      setCreatedPlanName(planName);
+      setCreatedClientName(client?.name ?? editPlan?.client?.name ?? 'Client');
+      setSubmitted(true);
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message ?? 'Failed to save plan');
+    },
+  });
+
+  const handleSubmit = () => {
+    if (!planName || (!isEditing && !selectedClient) || selectedExerciseIds.length === 0) {
+      toast.error('Please fill in all required fields and select at least one exercise.');
+      return;
+    }
+    createPlanMutation.mutate();
+  };
+
+  if (submitted) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <div className="w-20 h-20 rounded-2xl bg-success/20 flex items-center justify-center mb-6">
+          <CheckCircle size={40} className="text-success" />
+        </div>
+        <h2 className="font-display font-bold text-2xl mb-2">{isEditing ? 'Plan Updated!' : 'Plan Created!'}</h2>
+        <p className="text-muted-foreground mb-6">
+          "{createdPlanName}" has been {isEditing ? 'updated for' : 'sent to'} {createdClientName}.
+        </p>
+        <button
+          onClick={() => {
+            setSubmitted(false);
+            setPlanName("");
+            setSelectedClient("");
+            setOverrides({});
+            setSelectedDays([]);
+            setNotes("");
+          }}
+          className="gradient-primary text-white font-semibold px-6 py-2.5 rounded-xl shadow-primary hover:opacity-90 transition-opacity"
+        >
+          Create Another Plan
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6 animate-slide-up max-w-3xl">
+      <div>
+        <h1 className="font-display font-bold text-2xl">{isEditing ? 'Edit Exercise Plan' : 'Create Exercise Plan'}</h1>
+        <p className="text-muted-foreground text-sm mt-1">{isEditing ? 'Update the plan details and exercises.' : 'Build a personalised plan for your client.'}</p>
+      </div>
+
+      {/* Plan details */}
+      <div className="bg-card rounded-2xl p-6 shadow-card border border-border space-y-4">
+        <h2 className="font-display font-semibold">Plan Details</h2>
+
+        <div>
+          <label className="block text-sm font-medium mb-1.5">Plan Name</label>
+          <input
+            type="text"
+            value={planName}
+            onChange={(e) => setPlanName(e.target.value)}
+            placeholder="e.g. Knee Rehabilitation Phase 1"
+            className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1.5">Assign to Client</label>
+          {clientsLoading ? (
+            <div className="h-10 bg-muted rounded-xl animate-pulse" />
+          ) : clients.length === 0 ? (
+            <div className="p-3 rounded-xl bg-muted text-sm text-muted-foreground">
+              No clients linked yet. Share your activation code with patients to get started.
+            </div>
+          ) : (
+            <select
+              value={selectedClient}
+              onChange={(e) => setSelectedClient(e.target.value)}
+              className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+            >
+              <option value="">Select a client...</option>
+              {clients.map((c: any) => (
+                <option key={c.id} value={c.id}>
+                  {c.name} {c.primary_condition ? `— ${c.primary_condition}` : ''}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-2">Session Days</label>
+          <div className="flex gap-2 flex-wrap">
+            {days.map((day) => (
+              <button
+                key={day}
+                type="button"
+                onClick={() => toggleDay(day)}
+                className={`w-12 h-12 rounded-xl text-sm font-semibold transition-all ${
+                  selectedDays.includes(day)
+                    ? "gradient-primary text-white shadow-primary"
+                    : "bg-muted hover:bg-muted/80"
+                }`}
+              >
+                {day}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1.5">Plan Notes (optional)</label>
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Any special instructions or notes for the client..."
+            rows={2}
+            className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+          />
+        </div>
+      </div>
+
+      {/* Exercise selection */}
+      <div>
+        <h2 className="font-display font-semibold mb-1">Select Exercises</h2>
+        <p className="text-muted-foreground text-sm mb-4">{selectedExerciseIds.length} selected</p>
+
+        {exercisesLoading ? (
+          <div className="space-y-2">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-12 bg-muted rounded-xl animate-pulse" />
+            ))}
+          </div>
+        ) : exercises.length === 0 ? (
+          <div className="p-8 text-center bg-muted rounded-2xl">
+            <p className="text-3xl mb-2">🏋️</p>
+            <p className="text-sm text-muted-foreground">
+              No exercises in the library yet. Ask admin to add exercises.
+            </p>
+          </div>
+        ) : (
+          <>
+            {/* Search input */}
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search exercises..."
+              className="w-full px-4 py-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 mb-3"
+            />
+
+            {/* Tier filter chips */}
+            <div className="flex flex-wrap gap-2 mb-4">
+              {(['free', 'paid'] as const).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setTierFilter((prev) => (prev === t ? undefined : t))}
+                  className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                    tierFilter === t
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted text-muted-foreground hover:bg-muted/70'
+                  }`}
+                >
+                  {t === 'free' ? 'Free' : 'Premium'}
+                </button>
+              ))}
+            </div>
+
+            {/* Category accordions */}
+            {Object.entries(groupedExercises).map(([cat, catExercises]) => (
+              <div key={cat} className="border border-border rounded-xl overflow-hidden mb-2">
+                <button
+                  type="button"
+                  onClick={() => setOpenCategories(prev => {
+                    const next = new Set(prev);
+                    if (next.has(cat)) { next.delete(cat); } else { next.add(cat); }
+                    return next;
+                  })}
+                  className="w-full flex items-center justify-between px-4 py-3 bg-muted/40 hover:bg-muted/70 transition-colors"
+                >
+                  <span className="font-semibold text-sm">
+                    {CATEGORY_LABELS[cat] ?? cat}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {catExercises.length} exercise{catExercises.length !== 1 ? 's' : ''}
+                    {' '}{openCategories.has(cat) ? '▲' : '▼'}
+                  </span>
+                </button>
+                {openCategories.has(cat) && (
+                  <div className="p-2 space-y-1.5">
+                    {catExercises.map((ex: any) => {
+                      const isSelected = selectedExerciseIds.includes(ex.id);
+                      return (
+                        <div
+                          key={ex.id}
+                          className={`rounded-xl p-3 border transition-colors cursor-pointer ${
+                            isSelected
+                              ? 'bg-primary/8 border-primary/30'
+                              : 'bg-card border-border hover:bg-muted/30'
+                          }`}
+                          onClick={() => toggleExercise(ex)}
+                        >
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className={`w-5 h-5 rounded-lg border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                              isSelected ? 'bg-primary border-primary' : 'border-muted-foreground/30'
+                            }`}>
+                              {isSelected && <CheckCircle size={12} className="text-white" />}
+                            </div>
+                            <span className="text-sm font-semibold flex-1">{ex.title}</span>
+                            {ex.category && (
+                              <span className="text-xs text-muted-foreground capitalize px-2 py-0.5 bg-muted rounded-lg">
+                                {CATEGORY_LABELS[ex.category] ?? ex.category}
+                              </span>
+                            )}
+                          </div>
+                          {isSelected && overrides[ex.id] && (
+                            <div className="flex gap-4 mt-2 pl-8">
+                              <Stepper label="Sets" value={overrides[ex.id].sets} min={1} onChange={(v) => updateOverride(ex.id, 'sets', v)} />
+                              <Stepper label="Reps" value={overrides[ex.id].reps} min={1} onChange={(v) => updateOverride(ex.id, 'reps', v)} />
+                              <Stepper label="Hold (s)" value={overrides[ex.id].hold_seconds} min={0} onChange={(v) => updateOverride(ex.id, 'hold_seconds', v)} />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            ))}
+
+            {Object.keys(groupedExercises).length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-6">
+                {searchQuery ? 'No exercises match your search.' : 'No exercises available.'}
+              </p>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Per-exercise overrides — shown only when exercises are selected */}
+      {selectedExerciseIds.length > 0 && (
+        <div className="bg-card rounded-2xl border border-border shadow-card">
+          <div className="px-6 py-4 border-b border-border">
+            <h2 className="font-display font-semibold">Customise Selected Exercises</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">Adjust sets, reps, and hold time per exercise.</p>
+          </div>
+          <div className="divide-y divide-border">
+            {selectedExerciseIds.map((id) => {
+              const ex = exercises.find((e: any) => e.id === id);
+              if (!ex) return null;
+              const ov = overrides[id];
+              return (
+                <div key={id} className="p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center overflow-hidden flex-shrink-0">
+                        {ex.illustration_url ? (
+                          <img src={ex.illustration_url} alt={ex.title} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-base">🏃</span>
+                        )}
+                      </div>
+                      <p className="text-sm font-semibold">{ex.title}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => toggleExercise(ex)}
+                      className="text-xs text-destructive hover:underline"
+                    >
+                      Remove
+                    </button>
+                  </div>
+
+                  <div className="flex gap-6">
+                    <Stepper label="Sets" value={ov.sets} min={1} onChange={(v) => updateOverride(id, 'sets', v)} />
+                    <Stepper label="Reps" value={ov.reps} min={1} onChange={(v) => updateOverride(id, 'reps', v)} />
+                    <Stepper label="Hold (s)" value={ov.hold_seconds} min={0} onChange={(v) => updateOverride(id, 'hold_seconds', v)} />
+                  </div>
+
+                  <div>
+                    <input
+                      type="text"
+                      placeholder="PT notes for this exercise (optional)"
+                      value={ov.pt_notes}
+                      onChange={(e) => updateOverride(id, 'pt_notes', e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-border bg-background text-xs focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Submit */}
+      <div className="sticky bottom-4">
+        <button
+          onClick={handleSubmit}
+          disabled={
+            !planName ||
+            (!isEditing && !selectedClient) ||
+            selectedExerciseIds.length === 0 ||
+            createPlanMutation.isPending
+          }
+          className="w-full gradient-primary text-white font-bold py-4 rounded-2xl shadow-primary hover:opacity-90 transition-opacity disabled:opacity-40 text-lg"
+        >
+          {createPlanMutation.isPending
+            ? (isEditing ? 'Updating...' : 'Creating...')
+            : `${isEditing ? 'Update Plan' : 'Create Plan'} (${selectedExerciseIds.length} exercise${selectedExerciseIds.length !== 1 ? 's' : ''})`}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default CreatePlan;
