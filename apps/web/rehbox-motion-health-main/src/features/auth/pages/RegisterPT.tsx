@@ -1,29 +1,51 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
+import { ShieldCheck, Users, Wallet } from "lucide-react";
+import AuthScaffold from "@/features/auth/components/AuthScaffold";
 import RegistrationForm from "@/features/auth/components/RegistrationForm";
 
 const RegisterPT = () => {
-  const navigate = useNavigate();
-
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-6">
-      <div className="w-full max-w-lg">
-        <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-2 mb-6">
-            <div className="w-9 h-9 rounded-xl gradient-primary flex items-center justify-center shadow-primary"><span className="text-white font-display font-bold">Rx</span></div>
-            <span className="font-display font-bold text-xl">ReHboX</span>
+    <AuthScaffold
+      accent="blue"
+      eyebrow="For Physiotherapists"
+      headline="Build your"
+      headlineAccent="digital practice."
+      subhead="Join a vetted network of clinicians and onboard your clients with a platform built for outcomes."
+      highlights={[
+        { icon: ShieldCheck, title: "Verified credentials", desc: "Get vetted by the ReHboX medical team within 48 hours." },
+        { icon: Users, title: "Manage clients with ease", desc: "Assign plans, track adherence and message in one place." },
+        { icon: Wallet, title: "Grow your income", desc: "Reach more patients with remote, subscription-based care." },
+      ]}
+      stats={[
+        { value: "48hr", label: "Vetting" },
+        { value: "100%", label: "Remote" },
+        { value: "1k+", label: "Patients" },
+      ]}
+    >
+      <div
+        className="rounded-3xl p-7 sm:p-8"
+        style={{
+          background: "rgba(255,255,255,0.025)",
+          border: "1px solid rgba(255,255,255,0.07)",
+          backdropFilter: "blur(16px)",
+          boxShadow: "0 30px 80px rgba(0,0,0,0.45)",
+        }}
+      >
+        <h1 className="font-display font-bold text-2xl text-white mb-1">Join as a Physiotherapist</h1>
+        <p className="text-white/50 text-sm mb-7">
+          Complete your profile to get vetted and start onboarding clients.
+        </p>
+
+        <RegistrationForm type="pt" accent="blue" />
+
+        <p className="text-center text-white/45 text-sm mt-6">
+          Already registered?{" "}
+          <Link to="/login" className="font-semibold text-blue-300 hover:text-blue-200">
+            Sign in
           </Link>
-          <h1 className="font-display font-bold text-2xl mb-1">Join as a Physiotherapist</h1>
-          <p className="text-muted-foreground text-sm">Complete your profile to get vetted and start onboarding clients.</p>
-        </div>
-        <div className="bg-card rounded-2xl p-6 shadow-card border border-border">
-          {/* <RegistrationForm type="pt" onSubmit={() => navigate("/pending-vetting")} /> */}
-          <RegistrationForm type="pt" />
-        </div>
-        <p className="text-center text-sm text-muted-foreground mt-6">
-          Already registered? <Link to="/login" className="text-primary font-semibold hover:underline">Sign in</Link>
         </p>
       </div>
-    </div>
+    </AuthScaffold>
   );
 };
 
