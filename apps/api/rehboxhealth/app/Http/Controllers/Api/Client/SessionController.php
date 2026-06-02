@@ -97,6 +97,25 @@ class SessionController extends Controller
         ]);
     }
 
+    // Called when client cancels/abandons an in-progress exercise — discards the
+    // session so merely opening the camera never leaves a logged session behind.
+    public function cancel(Request $request, ExerciseSession $session): \Illuminate\Http\JsonResponse
+    {
+        $client = $request->user()->client;
+
+        if ($session->client_id !== $client->id) {
+            return response()->json(['message' => 'Unauthorized.'], 403);
+        }
+
+        if ($session->status === 'completed') {
+            return response()->json(['message' => 'Completed sessions cannot be cancelled.'], 422);
+        }
+
+        $session->delete();
+
+        return response()->json(['message' => 'Session cancelled.']);
+    }
+
     // Coin calculation — bonus for good form
     private function calculateCoins(int $formScore): int
     {

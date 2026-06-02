@@ -219,6 +219,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
             Route::post('/sessions', [SessionController::class, 'start']);
             Route::put('/sessions/{session}/complete', [SessionController::class, 'complete']);
+            Route::delete('/sessions/{session}', [SessionController::class, 'cancel']);
             Route::get('/sessions/history', [SessionController::class, 'history']);
             Route::post('/shop/{item}/purchase', [ShopController::class, 'purchase']);
         });
