@@ -7,9 +7,13 @@ import type { MovementDirection } from './AngleEngine';
 const VISIBILITY_THRESHOLD = 0.5;
 
 // Brand colours
-const PINK_PRIMARY = '#E5197D';
-const PINK_DIM     = 'rgba(229, 25, 125, 0.45)';
-const GHOST_COLOR  = 'rgba(180, 180, 200, 0.35)';
+// Ghost (whole-body) skeleton uses the brand hot-pink (#E5197D) so the full
+// body always reads clearly on camera. The active/targeted joint is drawn in
+// green on top, so the body part being exercised stands out from the rest.
+const GREEN_PRIMARY = '#22C55E';
+const GREEN_DIM     = 'rgba(34, 197, 94, 0.55)';
+const GHOST_COLOR   = 'rgba(229, 25, 125, 0.85)';
+const GHOST_DOT     = 'rgba(229, 25, 125, 0.95)';
 
 export interface Lm { x: number; y: number; visibility?: number }
 
@@ -23,7 +27,7 @@ export function drawGhostSkeleton(
 ): void {
   ctx.save();
   ctx.strokeStyle = GHOST_COLOR;
-  ctx.lineWidth   = 1.5;
+  ctx.lineWidth   = 3;
   ctx.lineCap     = 'round';
 
   for (const [ai, bi] of ALL_CONNECTIONS) {
@@ -37,11 +41,11 @@ export function drawGhostSkeleton(
     ctx.stroke();
   }
 
-  ctx.fillStyle = GHOST_COLOR;
+  ctx.fillStyle = GHOST_DOT;
   for (const lm of lms) {
     if (!lm || (lm.visibility ?? 0) < VISIBILITY_THRESHOLD) continue;
     ctx.beginPath();
-    ctx.arc(lm.x * W, lm.y * H, 2.5, 0, Math.PI * 2);
+    ctx.arc(lm.x * W, lm.y * H, 4, 0, Math.PI * 2);
     ctx.fill();
   }
 
@@ -68,7 +72,7 @@ export function drawActiveJoint(
     (c.visibility ?? 0) < VISIBILITY_THRESHOLD
   ) return;
 
-  const color     = direction === 'primary' ? PINK_PRIMARY : PINK_DIM;
+  const color     = direction === 'primary' ? GREEN_PRIMARY : GREEN_DIM;
   const lineWidth = isMobile ? 4 * (window.devicePixelRatio ?? 1) : 4;
 
   const ax = a.x * W, ay = a.y * H;

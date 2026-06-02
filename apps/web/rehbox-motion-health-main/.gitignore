@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Self-hosted MediaPipe model/runtime assets (large binaries, fetched locally)
+public/mediapipe/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

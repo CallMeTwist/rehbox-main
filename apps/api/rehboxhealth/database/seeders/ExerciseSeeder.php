@@ -291,14 +291,56 @@ class ExerciseSeeder extends Seeder
     {
         $title = strtolower($title);
 
+        // Normalise legacy area values to the current taxonomy (renamed in
+        // migration 2026_05_14_120000_update_exercises_taxonomy_and_video_fields)
+        // so this resolver works against both the legacy seed data below AND
+        // live, already-migrated exercises.
+        $area = match ($area) {
+            'neck' => 'head_neck',
+            'shoulder' => 'upper_limbs',
+            'lower_limb' => 'lower_limbs',
+            default => $area,
+        };
+
         return match ($area) {
-            'neck' => $this->neckAngles($title),
-            'shoulder' => $this->shoulderAngles($title),
+            'head_neck' => $this->neckAngles($title),
+            'upper_limbs' => $this->shoulderAngles($title),
             'elbow_forearm_wrist' => $this->elbowAngles($title),
-            'lower_limb' => $this->lowerLimbAngles($title),
+            'lower_limbs' => $this->lowerLimbAngles($title),
             'back' => $this->backAngles($title),
             default => null,
         };
+    }
+
+    /**
+     * Re-apply standard ROM correct_angles to EXISTING exercises in place.
+     *
+     * Non-destructive: only updates the correct_angles column, never deletes
+     * or recreates rows. Safe to run against a live database. By default it
+     * skips exercises that already have angles (e.g. admin overrides); pass
+     * $onlyEmpty = false to overwrite them.
+     *
+     * @return array{updated: int, total: int}
+     */
+    public function backfillCorrectAngles(bool $onlyEmpty = true): array
+    {
+        $exercises = Exercise::all();
+        $updated = 0;
+
+        foreach ($exercises as $exercise) {
+            if ($onlyEmpty && ! empty($exercise->correct_angles)) {
+                continue;
+            }
+
+            $angles = $this->resolveAngles($exercise->area, $exercise->title, $exercise->category);
+
+            if ($angles !== null) {
+                $exercise->update(['correct_angles' => $angles]);
+                $updated++;
+            }
+        }
+
+        return ['updated' => $updated, 'total' => $exercises->count()];
     }
 
     // ── Neck ─────────────────────────────────────────────────────────────────

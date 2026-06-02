@@ -4,6 +4,7 @@ import { Pose, Results } from '@mediapipe/pose';
 import { Camera } from '@mediapipe/camera_utils';
 import { mirrorLandmarks, POSE_PRESENCE_THRESHOLD, type JointRule } from '@/features/shared/utils/motion';
 import {
+  drawGhostSkeleton,
   drawActiveJoint,
   drawAngleLabel,
   drawFloatingLabels,
@@ -92,7 +93,6 @@ export function CameraTracker({
       minDetectionConfidence:   0.3,
       minTrackingConfidence:    0.3,
     });
-
     pose.onResults((results: Results) => {
       // Guard: this frame may have been in-flight when the component tore down.
       if (!isAlive) return;
@@ -146,6 +146,11 @@ export function CameraTracker({
           ctx.restore();
           return;
         }
+
+        // Layer A — full ghost skeleton. Always drawn whenever a pose is present
+        // so the user sees their whole body tracked, regardless of which joint
+        // the exercise targets (or whether the exercise has tracking rules).
+        drawGhostSkeleton(ctx, mirroredLms, W, H);
 
         if (rules && rules.length > 0) {
           // Active joint highlight: non-rep joints first, rep joint on top
