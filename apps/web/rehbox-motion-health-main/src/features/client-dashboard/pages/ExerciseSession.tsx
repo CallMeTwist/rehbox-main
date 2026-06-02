@@ -11,7 +11,16 @@ import VideoPlayer from '@/features/shared/components/VideoPlayer';
 import { ROM_STANDARDS } from '@/features/shared/utils/motion';
 import { useAuthStore, useIsFree } from '@/store/authStore';
 import { useLanguage } from '@/features/shared/context/LanguageContext';
-import { FreeTierLock } from '@/features/shared/components/FreeTierLock';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 type Phase = 'intro' | 'side_select' | 'active' | 'complete';
 type Side = 'left' | 'right';
@@ -144,6 +153,7 @@ function ROMGauge({ jointName, movement, currentAngle, sessionBest }: ROMGaugePr
 const MarkAsDoneSession = ({ exerciseId }: { exerciseId: string }) => {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
+  const [phase, setPhase] = useState<'intro' | 'active'>('intro');
 
   const { data: libraryData } = useQuery({
     queryKey: ['client-exercises-library', 'flat'],
@@ -173,11 +183,47 @@ const MarkAsDoneSession = ({ exerciseId }: { exerciseId: string }) => {
     return <div className="p-6 text-center text-muted-foreground">Loading…</div>;
   }
 
+  // ── ACTIVE: camera + skeleton-only practice (no ROM, no side, no reps) ──
+  if (phase === 'active') {
+    return (
+      <div className="min-h-screen bg-black flex flex-col">
+        <div className="flex items-center justify-between p-4 bg-black/80 text-white">
+          <button
+            onClick={() => setPhase('intro')}
+            className="shrink-0 rounded-full border border-white/30 bg-white/10 px-3 py-1.5 text-sm font-semibold text-white hover:bg-white/20 transition-colors"
+          >
+            ✕ Cancel
+          </button>
+          <p className="font-display font-bold truncate mx-3">{exercise.title}</p>
+          <span className="w-16 shrink-0" />
+        </div>
+
+        <div className="flex-1 relative m-2">
+          <div className="absolute inset-0 rounded-2xl overflow-hidden">
+            <CameraTracker onResults={() => {}} isActive />
+          </div>
+          <div className="absolute top-3 left-3 z-10 bg-black/70 rounded-xl px-3 py-2">
+            <p className="text-white/90 text-xs font-semibold">Skeleton tracking</p>
+            <p className="text-white/50 text-[11px]">Upgrade for rep counting &amp; ROM</p>
+          </div>
+        </div>
+
+        <div className="p-4">
+          <button
+            onClick={() => logCompletion.mutate()}
+            disabled={logCompletion.isPending}
+            className="w-full bg-success text-white font-bold py-4 rounded-2xl hover:opacity-90 transition text-lg disabled:opacity-50"
+          >
+            {logCompletion.isPending ? 'Saving…' : '✅ Done'}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── INTRO: exercise details + perform / mark-done options ──
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
-      <div className="w-full max-w-xs mb-6">
-        <FreeTierLock feature="tracking" variant="inline" />
-      </div>
       <div className="w-full max-w-sm mb-6">
         {exercise.video?.url ? (
           <VideoPlayer
@@ -202,11 +248,17 @@ const MarkAsDoneSession = ({ exerciseId }: { exerciseId: string }) => {
         </p>
       )}
       <button
+        onClick={() => setPhase('active')}
+        className="w-full max-w-xs gradient-primary text-white font-bold py-4 rounded-2xl shadow-primary hover:opacity-90"
+      >
+        ▶ Perform exercise
+      </button>
+      <button
         onClick={() => logCompletion.mutate()}
         disabled={logCompletion.isPending}
-        className="w-full max-w-xs gradient-primary text-white font-bold py-4 rounded-2xl shadow-primary hover:opacity-90 disabled:opacity-50"
+        className="mt-3 w-full max-w-xs border border-border text-foreground font-semibold py-3 rounded-2xl hover:bg-muted transition disabled:opacity-50"
       >
-        {logCompletion.isPending ? 'Saving…' : "I'm done ✓"}
+        {logCompletion.isPending ? 'Saving…' : 'Mark as done without camera'}
       </button>
       <button
         onClick={() => navigate('/client/exercises')}
@@ -323,6 +375,7 @@ const PaidExerciseSession = () => {
   const [cameraOn, setCameraOn]     = useState(false);
   const [elapsed, setElapsed]       = useState(0);
   const [sessionBestAngle, setSessionBestAngle] = useState(0);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
   const { data: planData, isLoading: planLoading } = useMyPlan();
 
@@ -416,9 +469,28 @@ const PaidExerciseSession = () => {
     completeMutation.mutate();
   };
 
-  const handleCancel = () => {
+  // Discard the in-progress session entirely (deletes the 'started' row on the
+  // backend) so merely checking things out never leaves a logged session.
+  const cancelMutation = useMutation({
+    mutationFn: () =>
+      sessionId ? api.delete(`/client/sessions/${sessionId}`) : Promise.resolve(),
+  });
+
+  const discardAndLeave = () => {
     setCameraOn(false);
+    setShowCancelConfirm(false);
+    cancelMutation.mutate();
     navigate('/client/plan');
+  };
+
+  const handleCancel = () => {
+    // Only confirm if the client has actually recorded reps; otherwise leave
+    // immediately (they were just checking things out).
+    if (repCount > 0) {
+      setShowCancelConfirm(true);
+    } else {
+      discardAndLeave();
+    }
   };
 
   const formatTime = (s: number) =>
@@ -554,9 +626,9 @@ const PaidExerciseSession = () => {
         <div className="flex items-center justify-between p-4 bg-black/80 text-white">
           <button
             onClick={handleCancel}
-            className="text-white/60 hover:text-white transition-colors text-sm shrink-0"
+            className="shrink-0 rounded-full border border-white/30 bg-white/10 px-3 py-1.5 text-sm font-semibold text-white hover:bg-white/20 transition-colors"
           >
-            ← Cancel
+            ✕ Cancel
           </button>
           <div className="text-center mx-3 min-w-0">
             <p className="font-display font-bold truncate">{exercise.title}</p>
@@ -703,15 +775,43 @@ const PaidExerciseSession = () => {
           </div>
         )}
 
-        {/* Complete button */}
-        <div className="p-4">
+        {/* Action buttons — Cancel (discard) + Complete */}
+        <div className="p-4 flex gap-3">
+          <button
+            onClick={handleCancel}
+            className="shrink-0 px-5 border border-white/25 text-white/90 font-semibold py-4 rounded-2xl hover:bg-white/10 transition"
+          >
+            Cancel
+          </button>
           <button
             onClick={handleComplete}
-            className="w-full bg-success text-white font-bold py-4 rounded-2xl hover:opacity-90 transition text-lg"
+            className="flex-1 bg-success text-white font-bold py-4 rounded-2xl hover:opacity-90 transition text-lg"
           >
             ✅ {t('session.complete')}
           </button>
         </div>
+
+        {/* Discard confirmation — only shown when reps have been recorded */}
+        <AlertDialog open={showCancelConfirm} onOpenChange={setShowCancelConfirm}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Discard this session?</AlertDialogTitle>
+              <AlertDialogDescription>
+                You&apos;ve recorded {repCount} rep{repCount === 1 ? '' : 's'}. If you
+                cancel now, this session won&apos;t be saved and won&apos;t count toward your progress.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Keep going</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={discardAndLeave}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Discard
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     );
   }
