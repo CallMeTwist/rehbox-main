@@ -106,7 +106,7 @@ export function FreeTierLock({ feature, variant = 'page', previewImage }: Props)
             Upgrade to Standard
             <ArrowRight size={16} />
           </Link>
-          <p className="text-white/30 text-xs mt-5">₦2,000/month · Cancel anytime</p>
+          <p className="text-white/30 text-xs mt-5"><span className="line-through">₦7,500</span> ₦2,000/month · Cancel anytime</p>
         </div>
       </div>
     </div>

@@ -146,11 +146,20 @@ export default function Upgrade() {
               Recommended
             </div>
             <p className="font-display font-bold uppercase tracking-widest text-sm mb-2" style={{ color: '#FF6BB5' }}>Standard</p>
-            <div className="flex items-baseline gap-1 mb-1">
-              <span className="font-display font-bold text-5xl text-white">₦2,000</span>
-              <span className="text-white/45 text-sm">/month</span>
+            <div className="mb-3">
+              <div className="flex items-baseline gap-2">
+                <span className="font-display font-bold text-5xl text-white">₦2,000</span>
+                <span className="text-white/45 text-sm">/month</span>
+              </div>
+              <div className="flex items-center gap-2 mt-1.5">
+                <span className="text-white/40 text-sm line-through">₦7,500</span>
+                <span className="text-white/35 text-xs">normally</span>
+              </div>
             </div>
-            <p className="text-white/40 text-xs mb-6">Cancel anytime · 7-day free trial</p>
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full mb-6"
+              style={{ background: 'rgba(229,25,125,0.12)', border: '1px solid rgba(229,25,125,0.25)' }}>
+              <span className="text-pink-300 text-xs font-semibold">Save 73% — launch offer</span>
+            </div>
 
             <ul className="space-y-3 mb-8">
               {STANDARD_FEATURES.map((f) => (

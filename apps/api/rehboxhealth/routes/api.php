@@ -114,6 +114,9 @@ Route::prefix('auth')->group(function () {
     Route::post('/client/login', [ClientAuthController::class, 'login']);
 });
 
+// Paystack webhook — public, server-to-server (signature-verified in controller)
+Route::post('/paystack/webhook', [SubscriptionController::class, 'webhook']);
+
 // Authenticated routes
 Route::middleware('auth:sanctum')->group(function () {
 
@@ -181,6 +184,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/exercises', [ClientExerciseLibraryController::class, 'index']);
         Route::post('/exercises/{exercise}/log-completion', [ExerciseCompletionController::class, 'store']);
         Route::post('/subscribe', [SubscriptionController::class, 'initialize']);
+        Route::get('/subscribe/verify', [SubscriptionController::class, 'verify']);
 
         Route::post('/push/subscribe', [PushController::class, 'subscribe']);
         Route::delete('/push/unsubscribe', [PushController::class, 'unsubscribe']);

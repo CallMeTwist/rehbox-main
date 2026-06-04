@@ -4,7 +4,7 @@ import { gsap } from "gsap";
 import { useGSAP } from "@gsap/react";
 import { ArrowRight, Brain, Users, Globe, Heart, Zap, Shield } from "lucide-react";
 import {
-  Eyebrow, SectionHeading, GradientText, StatCounter, MonogramAvatar,
+  Eyebrow, SectionHeading, GradientText, StatCounter,
 } from "@/features/auth/components/public/primitives";
 import {
   revealOnScroll, prefersReducedMotion, useCountUp,
@@ -53,9 +53,22 @@ const steps = [
 ];
 
 const team = [
-  { name: "Dr. Tunde Adeyemi", role: "Chief Physiotherapy Officer" },
-  { name: "Chisom Obi", role: "Head of Technology" },
-  { name: "Bola Nwachukwu", role: "Patient Experience Lead" },
+  {
+    name: "PT Stephanie Ede",
+    role: "Founder & CEO",
+    tag: "CEO",
+    img: "/team/stephanie-ede.jpg",
+    bio: "Physiotherapist on a mission to make world-class rehabilitation accessible to every Nigerian home.",
+    objectPosition: "50% 22%",
+  },
+  {
+    name: "PT Edison Eluke",
+    role: "Engineer & Product Architect",
+    tag: "Engineering",
+    img: "/team/edison-eluke.jpg",
+    bio: "The engineer behind the platform, turning AI motion tracking and clinical care into the product you use today.",
+    objectPosition: "50% 28%",
+  },
 ];
 
 // ── Page ──────────────────────────────────────────────────────────────────────
@@ -188,20 +201,57 @@ const About = () => {
       </section>
 
       {/* ── TEAM ─────────────────────────────────────────────────────────── */}
-      <section className="px-6 md:px-12 py-24" style={{ background: "var(--pub-card-light)" }}>
-        <div className="max-w-4xl mx-auto">
-          <SectionHeading tone="light" eyebrow="Our team" title="Meet the team" subtitle="The people behind your recovery." />
-          <div className="team-grid grid grid-cols-1 md:grid-cols-3 gap-8">
-            {team.map((m, i) => (
-              <div
+      <section className="relative px-6 md:px-12 py-28 overflow-hidden" style={{ background: "var(--pub-card-light)" }}>
+        <div
+          className="absolute top-0 left-1/2 -translate-x-1/2 w-[140%] h-[60%] pointer-events-none opacity-60"
+          style={{ background: "radial-gradient(ellipse at top, rgba(38,198,218,0.10), transparent 65%)" }}
+        />
+        <div className="relative max-w-5xl mx-auto">
+          <SectionHeading tone="light" eyebrow="Our team" title="The people behind ReHboX" subtitle="A clinician and an engineer, building recovery you can trust." />
+          <div className="team-grid grid grid-cols-1 sm:grid-cols-2 gap-8 md:gap-10 max-w-3xl mx-auto">
+            {team.map((m) => (
+              <article
                 key={m.name}
-                className="team-card text-center rounded-3xl p-8 transition-transform duration-300 hover:-translate-y-1.5"
-                style={{ background: "var(--pub-ivory)", border: "1px solid var(--pub-border-light)", boxShadow: "0 8px 30px rgba(10,20,48,0.06)" }}
+                className="team-card group relative rounded-[28px] overflow-hidden transition-all duration-500 hover:-translate-y-2"
+                style={{ border: "1px solid var(--pub-border-light)", boxShadow: "0 18px 50px rgba(10,20,48,0.12)" }}
               >
-                <div className="mb-5"><MonogramAvatar name={m.name} idx={i} size={80} /></div>
-                <p className="font-display font-bold" style={{ color: "var(--pub-ink-text)" }}>{m.name}</p>
-                <p className="text-sm mt-1" style={{ color: "var(--pub-ink-mute)" }}>{m.role}</p>
-              </div>
+                {/* portrait */}
+                <div className="relative aspect-square overflow-hidden" style={{ background: "var(--pub-ivory)" }}>
+                  <img
+                    src={m.img}
+                    alt={`${m.name} — ${m.role}`}
+                    loading="lazy"
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.06]"
+                    style={{ objectPosition: m.objectPosition }}
+                  />
+                  {/* scrim */}
+                  <div
+                    className="absolute inset-0"
+                    style={{ background: "linear-gradient(to top, rgba(7,12,30,0.92) 0%, rgba(7,12,30,0.45) 32%, transparent 58%)" }}
+                  />
+                  {/* role pill */}
+                  <span
+                    className="absolute top-4 left-4 inline-flex items-center text-[11px] font-semibold uppercase tracking-[0.14em] px-3 py-1.5 rounded-full text-white backdrop-blur-sm"
+                    style={{ background: "var(--pub-grad-accent)", boxShadow: "0 6px 18px rgba(224,71,155,0.35)" }}
+                  >
+                    {m.tag}
+                  </span>
+                  {/* name + role overlay */}
+                  <div className="absolute bottom-0 left-0 right-0 p-6">
+                    <h3 className="font-display font-bold text-xl text-white leading-tight">{m.name}</h3>
+                    <p className="text-sm mt-1 font-medium" style={{ color: "#A9E8F0" }}>{m.role}</p>
+                  </div>
+                </div>
+                {/* bio footer */}
+                <div className="p-6" style={{ background: "var(--pub-ivory)" }}>
+                  <p className="text-sm leading-relaxed" style={{ color: "var(--pub-ink-mute)" }}>{m.bio}</p>
+                </div>
+                {/* accent baseline */}
+                <div
+                  className="absolute bottom-0 left-0 h-1 w-0 group-hover:w-full transition-all duration-500"
+                  style={{ background: "var(--pub-grad-accent)" }}
+                />
+              </article>
             ))}
           </div>
         </div>

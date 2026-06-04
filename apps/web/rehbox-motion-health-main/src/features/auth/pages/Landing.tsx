@@ -14,6 +14,7 @@ import {
   revealOnScroll, prefersReducedMotion,
 } from "@/features/auth/components/public/useReveal";
 import Hero from "@/features/auth/components/public/Hero";
+import SponsorsMarquee from "@/features/auth/components/public/SponsorsMarquee";
 
 // ── Data ─────────────────────────────────────────────────────────────────────
 
@@ -73,15 +74,15 @@ const howItWorks = [
 
 const pricingPlans = [
   {
-    name: "Free", price: 0, icon: Zap, popular: false, isEnterprise: false,
+    name: "Free", price: 0, oldPrice: 0, icon: Zap, popular: false, isEnterprise: false,
     features: ["Access to general exercises", "Basic progress tracking", "Coin rewards system"],
   },
   {
-    name: "Standard", price: 2_000, icon: Crown, popular: true, isEnterprise: false,
+    name: "Standard", price: 2_000, oldPrice: 7_500, icon: Crown, popular: true, isEnterprise: false,
     features: ["Personalised PT exercise plan", "Chat with your PT (text + files)", "MediaPipe motion tracking", "Coin rewards & shop", "Progress analytics"],
   },
   {
-    name: "Enterprise", price: 0, icon: Award, popular: false, isEnterprise: true,
+    name: "Enterprise", price: 0, oldPrice: 0, icon: Award, popular: false, isEnterprise: true,
     features: ["Everything in Standard", "Multiple PT accounts under one clinic", "Clinic-wide analytics dashboard", "Priority support"],
   },
 ];
@@ -145,6 +146,9 @@ const Landing = () => {
           </div>
         </div>
       </section>
+
+      {/* ── SPONSORS ─────────────────────────────────────────────────────── */}
+      <SponsorsMarquee />
 
       {/* ── FEATURES ─────────────────────────────────────────────────────── */}
       <section className="px-6 md:px-12 py-24" style={{ background: "var(--pub-ivory)" }}>
@@ -244,14 +248,27 @@ const Landing = () => {
                     </div>
                     <h3 className="font-display font-bold text-xl" style={{ color: "var(--pub-ink-text)" }}>{plan.name}</h3>
                   </div>
-                  <div className="flex items-baseline gap-1 mb-8">
+                  <div className="mb-8">
                     {plan.isEnterprise
                       ? <span className="font-display font-bold text-3xl" style={{ color: "var(--pub-ink-text)" }}>Contact us</span>
                       : plan.price === 0
                         ? <span className="font-display font-bold text-4xl" style={{ color: "var(--pub-ink-text)" }}>Free</span>
                         : <>
-                            <span className="font-display font-bold text-4xl" style={{ color: "var(--pub-ink-text)" }}>₦{plan.price.toLocaleString()}</span>
-                            <span className="text-sm" style={{ color: "var(--pub-ink-mute)" }}>/month</span>
+                            <div className="flex items-baseline gap-1.5">
+                              <span className="font-display font-bold text-4xl" style={{ color: "var(--pub-ink-text)" }}>₦{plan.price.toLocaleString()}</span>
+                              <span className="text-sm" style={{ color: "var(--pub-ink-mute)" }}>/month</span>
+                            </div>
+                            {plan.oldPrice > plan.price && (
+                              <div className="flex items-center gap-2 mt-2">
+                                <span className="text-sm line-through" style={{ color: "var(--pub-ink-mute)" }}>₦{plan.oldPrice.toLocaleString()}</span>
+                                <span
+                                  className="text-[11px] font-semibold px-2 py-0.5 rounded-full"
+                                  style={{ background: "rgba(34,197,94,0.12)", color: "#16A34A", border: "1px solid rgba(34,197,94,0.22)" }}
+                                >
+                                  Save {Math.round((1 - plan.price / plan.oldPrice) * 100)}%
+                                </span>
+                              </div>
+                            )}
                           </>
                     }
                   </div>

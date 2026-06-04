@@ -55,9 +55,7 @@ const ClientLayout = () => {
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
       <div className="flex items-center gap-3 px-6 py-5 border-b border-sidebar-border">
-        <div className="w-9 h-9 rounded-xl gradient-pink flex items-center justify-center flex-shrink-0" style={{ boxShadow: 'var(--shadow-pink)' }}>
-          <span className="text-white font-display font-bold text-sm">Rx</span>
-        </div>
+        <img src="/logo-icon.png" alt="ReHboX" className="w-9 h-9 object-contain flex-shrink-0" />
         {sidebarOpen && <span className="text-white font-display font-bold text-xl tracking-tight">ReHboX</span>}
       </div>
       {sidebarOpen && (

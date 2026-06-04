@@ -8,6 +8,7 @@ const PLANS = [
   {
     name: 'Basic',
     price: '₦3,500',
+    oldPrice: '',
     period: '/month',
     features: [
       'Access to general exercises',
@@ -24,6 +25,7 @@ const PLANS = [
   {
     name: 'Standard',
     price: '₦2,000',
+    oldPrice: '₦7,500',
     period: '/month',
     features: [
       'Personalized exercise plan from your PT',
@@ -42,6 +44,7 @@ const PLANS = [
   {
     name: 'Enterprise',
     price: 'Contact us',
+    oldPrice: '',
     period: '',
     features: [
       'Everything in Standard',
@@ -112,6 +115,9 @@ const PaymentGate = () => {
 
               <p className="font-display font-bold text-lg">{plan.name}</p>
               <div className="flex items-baseline gap-1 mt-1 mb-3">
+                {plan.oldPrice && (
+                  <span className="text-muted-foreground/60 text-sm line-through">{plan.oldPrice}</span>
+                )}
                 <span className="text-primary font-semibold text-sm">{plan.price}</span>
                 {plan.period && (
                   <span className="text-muted-foreground text-xs">{plan.period}</span>

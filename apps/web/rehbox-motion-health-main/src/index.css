@@ -211,6 +211,7 @@
   @keyframes pub-pulse { 0%,100% { box-shadow: 0 0 0 5px rgba(38,198,218,.18), 0 0 12px rgba(38,198,218,.9); } 50% { box-shadow: 0 0 0 9px rgba(38,198,218,.05), 0 0 18px rgba(38,198,218,.9); } }
   @keyframes pub-scan  { 0%,100% { top: 18%; } 50% { top: 78%; } }
   @keyframes pub-spin  { to { transform: rotate(360deg); } }
+  @keyframes pub-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 
   .pub-anim-float    { animation: pub-float 7s ease-in-out infinite; }
   .pub-anim-pulse    { animation: pub-pulse 2.4s ease-in-out infinite; }
@@ -218,9 +219,18 @@
   .pub-anim-spin     { animation: pub-spin 26s linear infinite; }
   .pub-anim-spin-rev { animation: pub-spin 40s linear infinite reverse; }
 
+  /* Sponsor marquee — track holds two copies of the row; shift by 50% loops seamlessly */
+  .pub-marquee-mask {
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  }
+  .pub-marquee-track { animation: pub-marquee 38s linear infinite; }
+  .pub-marquee-mask:hover .pub-marquee-track { animation-play-state: paused; }
+
   @media (prefers-reduced-motion: reduce) {
     .pub-anim-float, .pub-anim-pulse, .pub-anim-scan,
-    .pub-anim-spin, .pub-anim-spin-rev { animation: none !important; }
+    .pub-anim-spin, .pub-anim-spin-rev,
+    .pub-marquee-track { animation: none !important; }
   }
 
   /* ── Status badges ───────────────────────────────────────────── */

@@ -16,6 +16,7 @@ import Contact from "@/features/auth/pages/Contact";
 import Privacy from "@/features/auth/pages/Privacy";
 import Terms   from "@/features/auth/pages/Terms";
 import Upgrade from "@/features/auth/pages/Upgrade";
+import UpgradeCallback from "@/features/auth/pages/UpgradeCallback";
 
 // PT pages
 import PTHome from "@/features/pt-dashboard/pages/Home";
@@ -101,6 +102,7 @@ const AppRouter = () => (
 
       {/* Upgrade — full-page (no public layout chrome) */}
       <Route path="/upgrade" element={<Upgrade />} />
+      <Route path="/upgrade/callback" element={<UpgradeCallback />} />
 
       <Route path="*" element={<NotFound />} />
     </Routes>

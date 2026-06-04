@@ -293,7 +293,7 @@ const RegistrationForm = ({ type, accent }: Props) => {
                       boxShadow: chosenPlan === "standard" ? `0 0 0 3px ${a.ring}` : "none",
                     }}
                   >
-                    <p className="font-display font-bold text-sm text-white">Standard · ₦2,000/mo</p>
+                    <p className="font-display font-bold text-sm text-white">Standard · <span className="text-white/40 line-through font-normal">₦7,500</span> ₦2,000/mo</p>
                     <p className="text-white/45 text-xs mt-1 leading-snug">Personal PT, AI tracking, custom plan</p>
                   </button>
                 </div>

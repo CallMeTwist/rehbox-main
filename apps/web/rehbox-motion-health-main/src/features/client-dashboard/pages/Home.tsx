@@ -180,7 +180,7 @@ const FreeHome = () => {
             <Crown size={18} className="text-pink-400" />
             <div>
               <p className="font-display font-bold text-foreground text-sm">Get a personal PT</p>
-              <p className="text-muted-foreground text-xs">Custom plans · AI tracking · ₦2,000/mo</p>
+              <p className="text-muted-foreground text-xs">Custom plans · AI tracking · <span className="line-through">₦7,500</span> ₦2,000/mo</p>
             </div>
           </div>
           <ArrowRight size={18} className="text-pink-400" />
