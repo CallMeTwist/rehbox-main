@@ -110,7 +110,7 @@ function ROMGauge({ jointName, movement, currentAngle, sessionBest }: ROMGaugePr
     '#EF4444';                     // red   — restricted
 
   return (
-    <div className="bg-black/75 rounded-2xl p-4 w-56 space-y-2">
+    <div className="bg-black/75 rounded-2xl p-3 sm:p-4 w-40 sm:w-56 space-y-2">
       <div className="flex items-center justify-between">
         <p className="text-white text-xs font-semibold uppercase tracking-wide truncate">
           {jointName}
@@ -376,6 +376,7 @@ const PaidExerciseSession = () => {
   const [elapsed, setElapsed]       = useState(0);
   const [sessionBestAngle, setSessionBestAngle] = useState(0);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [showDemo, setShowDemo] = useState(false); // mobile-only PiP demo toggle
 
   const { data: planData, isLoading: planLoading } = useMyPlan();
 
@@ -643,22 +644,52 @@ const PaidExerciseSession = () => {
           </div>
         </div>
 
-        {/* Split view */}
-        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-2 p-2">
-          {/* Left: exercise video or illustration */}
-          <div className="rounded-2xl overflow-hidden flex items-center justify-center" style={{ background: '#0F2557' }}>
+        {/* Stage — camera is the full canvas on mobile; side-by-side on desktop.
+            The exercise demo collapses to a small picture-in-picture thumbnail on
+            mobile so the client always has a full, unobstructed view of themselves. */}
+        <div className="flex-1 relative p-2 md:grid md:grid-cols-2 md:gap-2">
+          {/* Exercise demo — desktop column / mobile floating PiP */}
+          <div
+            className={
+              `z-20 overflow-hidden bg-[#0F2557] flex items-center justify-center ` +
+              // mobile: small floating PiP, top-left below the stat chips
+              `absolute top-16 left-3 w-28 max-w-[34%] aspect-[3/4] rounded-xl shadow-2xl ring-1 ring-white/30 ` +
+              // desktop: normal left grid cell
+              `md:static md:w-auto md:max-w-none md:aspect-auto md:rounded-2xl md:shadow-none md:ring-0 ` +
+              // mobile visibility toggle (always visible on desktop)
+              `${showDemo ? 'flex' : 'hidden'} md:flex`
+            }
+          >
             {exercise.video_url
               ? <VideoPlayer src={exercise.video_url} className="w-full h-full rounded-none" />
-              : <div className="text-center text-white p-8">
-                  <div className="text-7xl mb-4">🏃</div>
-                  <p className="font-semibold">{exercise.title}</p>
-                  <p className="text-white/60 text-sm mt-2">Follow along</p>
+              : <div className="text-center text-white p-4 md:p-8">
+                  <div className="text-4xl md:text-7xl mb-1 md:mb-4">🏃</div>
+                  <p className="font-semibold text-xs md:text-base">{exercise.title}</p>
+                  <p className="hidden md:block text-white/60 text-sm mt-2">Follow along</p>
                 </div>
             }
+            {/* Close PiP (mobile only) */}
+            <button
+              onClick={() => setShowDemo(false)}
+              aria-label="Hide demo"
+              className="md:hidden absolute top-1 right-1 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-xs text-white"
+            >
+              ✕
+            </button>
           </div>
 
-          {/* Right: live camera + overlays */}
-          <div className="relative rounded-2xl overflow-hidden">
+          {/* Show-demo pill (mobile only, when PiP is hidden) */}
+          {!showDemo && (
+            <button
+              onClick={() => setShowDemo(true)}
+              className="md:hidden absolute top-3 left-1/2 z-20 -translate-x-1/2 flex items-center gap-1 rounded-full bg-black/75 px-3 py-1.5 text-xs font-semibold text-white active:scale-95 transition"
+            >
+              ▶ Demo
+            </button>
+          )}
+
+          {/* Live camera + overlays — full stage on mobile, right column on desktop */}
+          <div className="absolute inset-2 md:relative md:inset-auto rounded-2xl overflow-hidden">
             <CameraTracker
               onResults={processResults}
               isActive={cameraOn}

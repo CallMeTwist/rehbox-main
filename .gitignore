@@ -48,6 +48,9 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# ===== Docs (kept local only) =====
+docs/
+
 # ===== Editor / OS =====
 .idea/
 .vscode/
@@ -59,3 +62,4 @@ Thumbs.db
 *.local
 *.suo
 *.sw?
+.fallow/

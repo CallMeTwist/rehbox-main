@@ -83,6 +83,10 @@ import { useAuthStore } from '@/store/authStore';
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api',
   withCredentials: true,
+  // Never let a request hang forever. Without this, a single stalled request
+  // leaves a React-Query mutation stuck in `isPending`, which permanently
+  // disables the chat send button until a full page reload.
+  timeout: 20000,
   headers: {
     Accept: 'application/json',
   },

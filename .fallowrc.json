@@ -1,0 +1,32 @@
+// .fallowrc.json
+{
+  "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
+
+  // Tell fallow where your app actually starts
+  "entry": ["src/index.ts", "src/main.ts"],
+
+  // Exclude generated files, declaration files, etc.
+  "ignorePatterns": [
+    "**/*.generated.ts",
+    "**/*.d.ts",
+    "dist/**",
+    "build/**"
+  ],
+
+  "rules": {
+    "unused-files": "error",
+    "unused-exports": "warn",
+    "unused-types": "warn",
+    "unresolved-imports": "error"
+  },
+
+  "duplicates": {
+    "mode": "mild",       // mild = default, good starting point
+    "minTokens": 50,
+    "minLines": 5,
+    "minOccurrences": 2   // raise to 3 for "rule of three" strictness
+  },
+
+  // Set to true to exclude test/dev files from dead code analysis
+  "production": false
+}

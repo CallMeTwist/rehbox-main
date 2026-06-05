@@ -5,12 +5,14 @@
     "dev:api": "cd apps/api/rehboxhealth && php artisan serve",
     "dev:web": "cd \"apps/web/rehbox-motion-health-main\" && npx vite",
     "dev:reverb": "cd apps/api/rehboxhealth && php artisan reverb:start --port=9000",
-    "dev": "concurrently \"npm run dev:api\" \"npm run dev:web\" \"npm run dev:reverb\"",
+    "dev:queue": "cd apps/api/rehboxhealth && php artisan queue:work --tries=1",
+    "dev": "concurrently -n api,web,reverb,queue \"npm run dev:api\" \"npm run dev:web\" \"npm run dev:reverb\" \"npm run dev:queue\"",
     "build:web": "cd \"apps/web/rehbox-motion-health-main\" && npx vite build",
     "install:web": "cd \"apps/web/rehbox-motion-health-main\" && npm install"
   },
   "devDependencies": {
     "concurrently": "^8.2.0",
+    "fallow": "^2.88.3",
     "shadcn": "^4.7.0"
   }
 }
